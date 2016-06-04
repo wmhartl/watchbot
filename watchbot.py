@@ -1,18 +1,19 @@
 import tweepy
 from bs4 import BeautifulSoup
-import urllib2
-import string
-import re
-import os
-import hashlib
 from datetime import datetime, timedelta, date, time
+import hashlib
+import os
+import re
+import string
+import urllib2
+import sqlite3
 from watchconfig import *  # import config
 
 def tweet_update(status, filename=None):
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret_key)
     auth.set_access_token(access_token, access_token_secret)
     api = tweepy.API(auth)
-    if not status:
+    if not status and not filename:
         print "Tweet error"
     else:
         if filename:
@@ -27,13 +28,13 @@ def google_search_url(lead_string, site_string):
     search_url=string.replace(search_url,"##",searchstring, 1)
     return search_url.lower()
 
-def exec_google_search(url):
+def exec_google_search(url,altpic=0):
     #print url
     header = {'User-Agent': user_agent}
     htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
     images = [a['href'] for a in htmlresp.find_all("a", {"href": re.compile("jpg")})]
     try:
-        output = images[0].split('=')[1]
+        output = images[altpic].split('=')[1]
         output = output.split('&')[0]
     except:
         output = None
@@ -56,8 +57,17 @@ os.chdir(dname)
 
 image_url = exec_google_search(google_search_url(search_text, search_site))
 print image_url
+#TODO: change code around to check for preexisting file, and if so find another one - loop using altpic opt param
 image_file = capture_image(image_url)
 print image_file
+print datetime.now()
 
-#tweet_update("Hello world, this is watchesbot!")
+conn = sqlite3.connect(database_file)
+db = conn.cursor()
+if os.path.getsize(database_file)<100:
+    db.execute("create table images(filename text, url text, date text)")
+db.execute("insert into images values (?, ?, ?)", (image_file, image_url, datetime.now()))
+conn.commit()
+conn.close()
+
 #tweet_update("", image_file)

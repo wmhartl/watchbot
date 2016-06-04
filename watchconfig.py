@@ -14,3 +14,6 @@ days_to_subtract = 2  # to search historically rather than on the current date
 
 # URL request config
 user_agent = "Mozilla/5.0 (X11; Linux armv7l; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0"
+
+# database config
+database_file = "watches.db"
