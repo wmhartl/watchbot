@@ -28,18 +28,24 @@ def google_search_url(lead_string, site_string):
     search_url=string.replace(search_url,"##",searchstring, 1)
     return search_url.lower()
 
-def exec_google_search(url,altpic=0):
+def exec_google_search(url):
     #print url
     header = {'User-Agent': user_agent}
     htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
-    images = [a['href'] for a in htmlresp.find_all("a", {"href": re.compile("jpg")})]
-    try:
-        output = images[altpic].split('=')[1]
-        output = output.split('&')[0]
-    except:
-        output = None
+    imagesresp = [a['href'] for a in htmlresp.find_all("a", {"href": re.compile("jpg")})]
+    return imagesresp
 
-    return output
+def parse_images(images):
+    possible_images = []
+    for each in images:
+        try:
+            output = each.split('=')[1]
+            output = output.split('&')[0]
+            possible_images.append(output)
+        except:
+            output = None
+
+    return possible_images
 
 def capture_image(url):
     raw_img = urllib2.urlopen(url).read()
@@ -55,17 +61,29 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-image_url = exec_google_search(google_search_url(search_text, search_site))
-print image_url
-#TODO: change code around to check for preexisting file, and if so find another one - loop using altpic opt param
-image_file = capture_image(image_url)
-print image_file
-print datetime.now()
-
 conn = sqlite3.connect(database_file)
 db = conn.cursor()
 if os.path.getsize(database_file)<100:
     db.execute("create table images(filename text, url text, date text)")
+
+images = exec_google_search(google_search_url(search_text, search_site))
+image_urls = parse_images(images)
+print image_urls
+
+#TODO: adjust code to find one a pic not used in image_urls
+db.execute("select rowid from images where url = ?", (image_urls[0], ))
+rowid = db.fetchall()
+if len(rowid)==0:
+    print "not found"
+else:
+    print "found"
+image_url = image_urls[0]
+print image_url
+
+image_file = capture_image(image_url)
+print image_file
+print datetime.now()
+
 db.execute("insert into images values (?, ?, ?)", (image_file, image_url, datetime.now()))
 conn.commit()
 conn.close()
