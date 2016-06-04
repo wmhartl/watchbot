@@ -1,13 +1,13 @@
 import tweepy
+from bs4 import BeautifulSoup
 import glob
 import random
+import urllib2
+import string
+import re
 import os
-from datetime import datetime, date, time
-
-consumer_key = "REDACTED"
-consumer_secret_key = "REDACTED"
-access_token = "REDACTED"
-access_token_secret = "REDACTED"
+from datetime import datetime, timedelta, date, time
+from watchconfig import *  # import config
 
 def tweet_update(status):
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret_key)
@@ -18,18 +18,28 @@ def tweet_update(status):
     else:
         api.update_status(status)
 
-def setup_google_search(lead_string, site_string):
-    dt = datetime.now()
-    outstring = lead_string + "+" + dt.strftime("%B+%d+%Y") + "+site:" + site_string
-    return outstring.lower()
+def google_search_url(lead_string, site_string):
+    dt = datetime.now() - timedelta(days=days_to_subtract)
+    searchstring = lead_string + "+" + dt.strftime("%-d+%B+%Y") + "+site:" + site_string  # %-d may not work on Windows
+    search_url=google_image_search_url
+    search_url=string.replace(search_url,"##",searchstring, 1)
+    return search_url.lower()
 
-#start
-#Changes directory to where the script is located (easier cron scheduling, allows you to work with relative paths)
+def exec_google_search(url):
+    print url
+    header = {'User-Agent': user_agent}
+    htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
+    #images = [a['data-src'] for a in htmlresp.find_all("img", {"data-src": re.compile("gstatic.com")})]
+    images = htmlresp.find_all("script")
+    for each in images:
+        print each
+
+# main
+# Changes directory to where the script is located (easier cron scheduling, allows you to work with relative paths)
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-print setup_google_search("wruw","watchuseek.com")
-
-tweet_update("Hello world, this is watchesbot!")
-tweet_update("")
+print exec_google_search(google_search_url(search_text, search_site))
+#tweet_update("Hello world, this is watchesbot!")
+#tweet_update("")
