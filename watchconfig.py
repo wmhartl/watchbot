@@ -13,5 +13,4 @@ search_text = "wruw"  # search string
 days_to_subtract = 2  # to search historically rather than on the current date
 
 # URL request config
-#user_agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:46.0) Gecko/20100101 Firefox/46.0"
-user_agent = "Mozilla"
+user_agent = "Mozilla/5.0 (X11; Linux armv7l; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0"

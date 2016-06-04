@@ -1,11 +1,10 @@
 import tweepy
 from bs4 import BeautifulSoup
-import glob
-import random
 import urllib2
 import string
 import re
 import os
+import hashlib
 from datetime import datetime, timedelta, date, time
 from watchconfig import *  # import config
 
@@ -32,11 +31,22 @@ def exec_google_search(url):
     #print url
     header = {'User-Agent': user_agent}
     htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
-    images = [a['src'] for a in htmlresp.find_all("img", {"src": re.compile("gstatic.com")})]
-    if images:
-        return images[0]
-    else:
-        return None
+    images = [a['href'] for a in htmlresp.find_all("a", {"href": re.compile("jpg")})]
+    try:
+        output = images[0].split('=')[1]
+        output = output.split('&')[0]
+    except:
+        output = None
+
+    return output
+
+def capture_image(url):
+    raw_img = urllib2.urlopen(url).read()
+    filename = hashlib.sha256(raw_img).hexdigest() + ".jpg"
+    f = open(filename, 'wb')
+    f.write(raw_img)
+    f.close()
+    return filename
 
 # main
 # Changes directory to where the script is located (easier cron scheduling, allows you to work with relative paths)
@@ -44,8 +54,10 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-image_url=exec_google_search(google_search_url(search_text, search_site))
+image_url = exec_google_search(google_search_url(search_text, search_site))
 print image_url
+image_file = capture_image(image_url)
+print image_file
 
 #tweet_update("Hello world, this is watchesbot!")
-#tweet_update("")
+#tweet_update("", image_file)
