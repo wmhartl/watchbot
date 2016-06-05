@@ -23,20 +23,20 @@ def tweet_update(status, filename=None):
     auth.set_access_token(access_token, access_token_secret)
     api = tweepy.API(auth)
     if not status and not filename:
-        logging.error("Tweet error")
+        logging.error("Nothing to tweet")
     else:
         if filename:
             api.update_with_media(filename, status)
         else:
-            if status:
-                api.update_status(status)
-            else:
-                logging.error("Nothing to tweet")
+            api.update_status(status)
 
 # create the google search url used for the image search
 def google_search_url(lead_string, site_string):
     dt = datetime.now() - timedelta(days=days_to_subtract)
-    searchstring = lead_string + "+" + dt.strftime("%-d+%B+%Y") + "+site:" + site_string  # %-d may not work on Windows
+    try:
+        searchstring = lead_string + "+" + dt.strftime("%-d+%B+%Y") + "+site:" + site_string  # %-d may not work on Win
+    except:
+        searchstring = lead_string + "+" + dt.strftime("%d+%B+%Y") + "+site:" + site_string
     search_url=google_image_search_url
     search_url=string.replace(search_url,"##",searchstring, 1)
     return search_url.lower()
@@ -45,7 +45,11 @@ def google_search_url(lead_string, site_string):
 def exec_google_search(url):
     logging.debug(url)
     header = {'User-Agent': user_agent}
-    htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
+    try:
+        htmlresp = BeautifulSoup(urllib2.urlopen(urllib2.Request(url,headers=header)))
+    except:
+        logging.error("Initial Google search failed")
+        htmlresp = ""
     imagesresp = [a['href'] for a in htmlresp.find_all("a", {"href": re.compile("jpg")})]
     return imagesresp
 
@@ -90,18 +94,24 @@ def find_unused_image(image_urls, conn):
 def capture_image_to_file(url):
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(NoRedirection, urllib2.HTTPCookieProcessor(cj))
-    response = opener.open(url) #, urlencode(data))
+    try:
+        response = opener.open(url)
+    except:
+        return None
     if response.code != 200:
         if response.code == 302 or response.code == 301:
             url = response.headers['Location']
             logging.debug("Redirected to " + url)
         else:
-            logging.error("error fetching")
+            logging.error("error fetching image")
             logging.error(response.code)
             logging.error(response.headers)
             return None
 
-    raw_img = urllib2.urlopen(url).read()
+    try:
+        raw_img = urllib2.urlopen(url).read()
+    except:
+        raw_img = ""
     d = os.path.dirname(image_path)
     if not os.path.exists(d):
         try:
@@ -143,7 +153,7 @@ if image_url:
     db.execute("insert into images values (?, ?, ?)", (image_file, image_url, datetime.now()))
     conn.commit()
     conn.close()
-    tweet_update("", image_file)
+    tweet_update(tweet_message, image_file)
 else:
     conn.close()
     logging.error("Could not find a unique image")
