@@ -1,3 +1,5 @@
+# watchbot.py
+
 import tweepy
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -72,7 +74,6 @@ def parse_images(images):
                 possible_images.append(output)
         except:
             logging.error("Split error")
-
     return possible_images
 
 # walk the possible images checking each in the DB by URL to find one that isn't already downloaded
@@ -86,7 +87,6 @@ def find_unused_image(image_urls, conn):
         if len(rowid) == 0:
             image_url = each
             break
-
     return image_url
 
 # grab the image - handling redirection, then ensure we have a place to put the image, SHA256 hash the image
@@ -107,7 +107,6 @@ def capture_image_to_file(url):
             logging.error(response.code)
             logging.error(response.headers)
             return None
-
     try:
         raw_img = urllib2.urlopen(url).read()
     except:
@@ -118,7 +117,6 @@ def capture_image_to_file(url):
             os.makedirs(image_path)
         except:
             logging.error("cannot create path")
-
     filename = image_path + hashlib.sha256(raw_img).hexdigest() + ".jpg"
     f = open(filename, 'wb')
     f.write(raw_img)
